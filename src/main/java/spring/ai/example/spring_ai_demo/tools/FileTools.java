@@ -6,6 +6,7 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 import java.nio.file.*;
 import java.util.List;
+import java.util.stream.Stream;
 
 /**
  * @author duoyian
@@ -139,6 +140,36 @@ public class FileTools {
 
         } catch (IOException e) {
             return "复制文件失败: " + e.getMessage();
+        }
+    }
+
+    @Tool(description = "在工作目录 'files' 及其所有子目录中递归搜索文件。返回匹配文件的相对路径。参数 name 是要搜索的文件名或关键字。")
+    public String searchFiles(String name) {
+        System.out.println("搜索文件: " + name);
+        try {
+            Path basePath = Paths.get(BASE_DIR);
+            if (!Files.exists(basePath)) {
+                return "当前没有文件目录。";
+            }
+
+            List<String> matchedPaths;
+            try (Stream<Path> stream = Files.walk(basePath)) {
+                matchedPaths = stream
+                        .filter(Files::isRegularFile)
+                        // 保留包含关键字的文件（忽略大小写）
+                        .filter(path -> path.getFileName().toString().toLowerCase().contains(name.toLowerCase()))
+                        // 转换为相对于 'files' 的路径字符串 (如: "subdir/file.txt")
+                        .map(path -> basePath.relativize(path).toString())
+                        .toList();
+            }
+
+            if (matchedPaths.isEmpty()) {
+                return "未找到包含 '" + name + "' 的文件。";
+            }
+
+            return "找到 " + matchedPaths.size() + " 个匹配文件:\n" + String.join("\n", matchedPaths);
+        } catch (IOException e) {
+            return "搜索文件失败: " + e.getMessage();
         }
     }
 }
