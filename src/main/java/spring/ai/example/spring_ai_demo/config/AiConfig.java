@@ -7,7 +7,6 @@ import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.ai.tool.method.MethodToolCallbackProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.stereotype.Component;
 import spring.ai.example.spring_ai_demo.tools.ChatTools;
 import spring.ai.example.spring_ai_demo.tools.FileTools;
 
