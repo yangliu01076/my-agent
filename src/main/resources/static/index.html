@@ -1,25 +1,84 @@
 <!DOCTYPE html>
-<html lang="zh-CN"> <!-- 建议改为 zh-CN -->
+<html lang="zh-CN">
 <head>
-    <!-- 1. 核心：强制指定 UTF-8 编码 -->
     <meta charset="UTF-8">
-
     <title>my agent</title>
     <style>
-        body { font-family: sans-serif; padding: 20px; max-width: 800px; margin: 0 auto; }
-        #chat-box { border: 1px solid #ccc; height: 400px; overflow-y: scroll; padding: 10px; margin-bottom: 10px; background: #f9f9f9; }
-        .message { margin-bottom: 10px; padding: 8px; border-radius: 5px; }
-        .user { text-align: right; background: #e1f5fe; }
-        .ai { text-align: left; background: #fff; border: 1px solid #eee; }
-        input { width: 70%; padding: 10px; }
-        button { width: 25%; padding: 10px; background: #007bff; color: white; border: none; cursor: pointer; }
+        body {
+            font-family: sans-serif;
+            padding: 20px;
+            max-width: 100%; /* 让容器占满屏幕宽度 */
+            margin: 0 auto;
+            /* 只有加上 height: 100vh，body 的百分比高度才有参考基准（虽然这里主要用vh） */
+            min-height: 100vh;
+            box-sizing: border-box;
+        }
+
+        /* --- 聊天框样式调整区域 --- */
+        #chat-box {
+            border: 1px solid #ccc;
+
+            /*【核心调整】高度占屏幕的 60% (你可以改为 70% 或 50%) */
+            height: 60vh;
+
+            overflow-y: scroll;
+            padding: 15px;
+            margin-bottom: 20px;
+            background: #f9f9f9;
+            border-radius: 8px;
+
+            /* 宽度设置：占满父容器的 100% */
+            width: 100%;
+            box-sizing: border-box; /* 关键：确保 padding 不会撑大宽度 */
+        }
+        /* ------------------------- */
+
+        .message { margin-bottom: 15px; padding: 10px 15px; border-radius: 8px; line-height: 1.5; word-wrap: break-word;}
+        .user { text-align: right; background: #e1f5fe; color: #333; }
+        .ai { text-align: left; background: #fff; border: 1px solid #eee; color: #333; }
+
+        /* 输入框区域容器 */
+        .input-container {
+            display: flex;
+            gap: 10px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        input {
+            /* 输入框宽度：占总宽度的 75% */
+            width: 75%;
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box; /* 关键 */
+        }
+
+        button {
+            /* 按钮宽度：占总宽度的 20% (留出 5% 的间隙 gap) */
+            width: 20%;
+            padding: 12px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        button:hover { background: #0056b3; }
     </style>
 </head>
 <body>
+
 <h2>my agent</h2>
-<div id="chat-box"></div>
-<div>
-    <input type="text" id="userInput" placeholder="输入指令，例如：列出当前文件，或者读取 log.txt" />
+
+<!-- 高度现在是屏幕高度的 60% -->
+<div id="chat-box">
+    <div class="message ai">AI: 你好！我是你的文件助手。你可以输入 "列出当前文件" 或 "读取 log.txt"。</div>
+</div>
+
+<div class="input-container">
+    <input type="text" id="userInput" placeholder="输入指令，例如：列出当前文件..." />
     <button onclick="sendMessage()">发送</button>
 </div>
 
@@ -29,12 +88,22 @@
         const message = input.value.trim();
         if (!message) return;
 
-        // 显示用户消息
         const chatBox = document.getElementById('chat-box');
-        chatBox.innerHTML += `<div class="message user">我: ${message}</div>`;
+
+        // 安全处理，防止 XSS
+        const safeMessage = message.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+        chatBox.innerHTML += `<div class="message user">我: ${safeMessage}</div>`;
         input.value = '';
 
-        // 发送给后端
+        // 滚动到底部
+        chatBox.scrollTop = chatBox.scrollHeight;
+
+        // 加载状态
+        const loadingId = 'loading-' + Date.now();
+        chatBox.innerHTML += `<div class="message ai" id="${loadingId}">AI: 思考中...</div>`;
+        chatBox.scrollTop = chatBox.scrollHeight;
+
         fetch('/api/file/chat', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -42,12 +111,22 @@
         })
             .then(res => res.text())
             .then(data => {
-                chatBox.innerHTML += `<div class="message ai">AI: ${data}</div>`;
+                const loadingDiv = document.getElementById(loadingId);
+                if(loadingDiv) loadingDiv.remove();
+
+                // 处理换行
+                const formattedData = data.replace(/\n/g, '<br>');
+
+                chatBox.innerHTML += `<div class="message ai">AI: ${formattedData}</div>`;
                 chatBox.scrollTop = chatBox.scrollHeight;
+            })
+            .catch(err => {
+                const loadingDiv = document.getElementById(loadingId);
+                if(loadingDiv) loadingDiv.remove();
+                chatBox.innerHTML += `<div class="message ai" style="color:red;">AI: 连接服务器出错</div>`;
             });
     }
 
-    // 回车发送
     document.getElementById('userInput').addEventListener('keypress', function (e) {
         if (e.key === 'Enter') sendMessage();
     });

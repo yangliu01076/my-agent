@@ -6,6 +6,7 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 import java.nio.file.*;
 import java.util.List;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -52,14 +53,26 @@ public class FileTools {
     @Tool(description = "列出当前工作目录 'files' 下所有的文件名")
     public String listFiles() {
         System.out.println("列出文件");
-        try {
-            Path dir = Paths.get(BASE_DIR);
-            if (!Files.exists(dir)) {
-                return "当前没有文件目录。";
-            }
-            List<String> files = Files.list(dir).map(p -> p.getFileName().toString()).toList();
+        Path dir = Paths.get(BASE_DIR);
+        if (!Files.exists(dir)) {
+            return "当前没有文件目录。";
+        }
+        // 【核心修改】使用 Files.walk 替代 Files.list
+        // maxDepth 参数表示递归深度：
+        // Integer.MAX_VALUE = 无限递归所有层级
+        // 1 = 仅当前目录
+        // 2 = 当前目录 + 一层子目录
+        try (Stream<Path> stream = Files.walk(dir, Integer.MAX_VALUE)) {
+
+            List<String> files = stream
+                    .map(p -> dir.relativize(p).toString())
+                    .collect(Collectors.toList()); // 使用 collect 确保流转完
+
             if (files.isEmpty()) return "目录为空。";
-            return String.join(", ", files);
+
+            // 用换行符分隔，方便 AI 和人类阅读
+            return String.join("\n", files);
+
         } catch (IOException e) {
             return "列出文件失败: " + e.getMessage();
         }
