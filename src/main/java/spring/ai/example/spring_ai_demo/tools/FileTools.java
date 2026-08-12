@@ -14,7 +14,7 @@ import java.util.stream.Stream;
  * @since 2026/8/12
  */
 @Component
-public class FileTools {
+public class FileTools implements ChatTools {
 
     private final String BASE_DIR = "/Users/duoyian/IdeaProjects/spring-ai-demo/files";
 

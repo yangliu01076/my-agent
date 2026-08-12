@@ -1,5 +1,6 @@
 package spring.ai.example.spring_ai_demo.controller;
 
+import jakarta.annotation.Resource;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -17,11 +18,8 @@ import java.util.function.Function;
 @RequestMapping("/api/file/chat")
 public class FileChatController {
 
-    private final ChatClient chatClient;
-
-    public FileChatController(ChatClient chatClient) {
-        this.chatClient = chatClient;
-    }
+    @Resource
+    private ChatClient chatClient;
 
     @PostMapping
     public String chat(@RequestBody Map<String, String> payload) {
