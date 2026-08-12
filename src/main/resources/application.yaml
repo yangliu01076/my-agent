@@ -1,0 +1,10 @@
+spring:
+  application:
+    name: spring-ai-demo
+  ai:
+    openai:
+      base-url: http://127.0.0.1:33241/v1
+      api-key: duoyian
+      chat:
+        model: glm-4.7
+        temperature: 0.7
